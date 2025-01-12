@@ -40,6 +40,7 @@ pipeline {
                 withSonarQubeEnv('sonar') {
                     sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName-taskmanager -Dsonar.projectKey=taskmanager\
                     -Dsonar.java.binaries=target '''
+                    
                 }
             }
         }
@@ -69,7 +70,7 @@ pipeline {
         
         stage('Trivy Image Scan') {
             steps {
-                sh 'trivy image --format table -o image.html izarorubio/taskmanager:latest '
+                sh 'trivy image --format table -o image.html izarorubio/taskmanager:latest'
             }
         }
         
@@ -77,7 +78,7 @@ pipeline {
             steps {
                 script{
                 withDockerRegistry(credentialsId: 'docker-credential', toolName: 'docker') {
-                    sh 'docker push izarorubio/taskmanager:latest .'
+                    sh 'docker push izarorubio/taskmanager:latest'
                 }
             }
         }}
