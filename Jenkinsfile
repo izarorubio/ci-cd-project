@@ -49,6 +49,7 @@ pipeline {
                 sh 'mvn package'
             }
         }
+        
         stage('Publish Artifacts') {
             steps {
                 withMaven(globalMavenSettingsConfig: 'settings-maven', jdk: '', maven: 'maven3', mavenSettingsConfig: '', traceability: true) {
@@ -65,5 +66,38 @@ pipeline {
                 }
             }
         }}
+        
+        stage('Trivy Image Scan') {
+            steps {
+                sh 'trivy image --format table -o image.html izarorubio/taskmanager:latest '
+            }
+        }
+        
+        stage('Docker Push') {
+            steps {
+                script{
+                withDockerRegistry(credentialsId: 'docker-credential', toolName: 'docker') {
+                    sh 'docker push izarorubio/taskmanager:latest .'
+                }
+            }
+        }}
+        
+        stage('K8 Deploy') {
+            steps {
+                withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://B663F0FF9AE71AEA2D7776C7CB809DF3.gr7.eu-north-1.eks.amazonaws.com') {
+                    sh 'kubectl apply -f deployment-service.yml'
+                    sleep 30
+                }
+            }
+        }
+        
+        stage('Verify K8 Deployment') {
+            steps {
+                withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://B663F0FF9AE71AEA2D7776C7CB809DF3.gr7.eu-north-1.eks.amazonaws.com') {
+                    sh 'kubectl get pods -n webapps'
+                    sh 'kubectl get svc -n webapps'
+                }
+            }
+        }
     }
 }
